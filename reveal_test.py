@@ -1,9 +1,15 @@
 from html.parser import HTMLParser
 from bacon_binary_hide import english_dict
 
-html_str = "A<i><b>B</b></i><font color=blue>C</font><font color=blue>D</font>"
+html_str = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
+<html><head><meta name="qrichtext" content="1" /><meta charset="utf-8" /><style type="text/css">
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+</style></head><body style=" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;">
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">aAAAA<span style=" font-weight:700;">aa</span><span style=" font-weight:700; font-style:italic;">aaa</span><span style=" font-style:italic;">a</span><span style=" font-style:italic; text-decoration: underline;">a</span><span style=" text-decoration: underline;">aaaa</span><span style=" text-decoration: underline; color:#0000ff;">aa</span><span style=" color:#0000ff;">aaaaaa</span></p></body></html>
+"""
 
-english_dict_reversed = {y: x for x, y in english_dict.items()}
+#english_dict_reversed = {y: x for x, y in english_dict.items()}
 
 true_val = 'A'
 false_val = 'B'
@@ -40,6 +46,7 @@ class MyHTMLParser(HTMLParser):
             self.current_letter_tags['reg'] = True
 
     def handle_endtag(self, tag):
+        print(tag)
         if tag == "i":
             self.current_letter_tags['ital'] = True
         elif tag == "b":
@@ -54,7 +61,8 @@ class MyHTMLParser(HTMLParser):
     def get_result(self):
         res_string = ""
         for chunk in self.result_chunks:
-            res_string += english_dict_reversed[chunk]
+            #res_string += english_dict_reversed[chunk]
+            res_string += chunk
         return res_string
 
 

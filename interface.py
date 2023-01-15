@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QFileDialog,
-                             QLabel, QLineEdit, QHBoxLayout, QVBoxLayout,
+                             QLabel, QLineEdit, QTextEdit, QHBoxLayout, QVBoxLayout,
                              QWidget, QPushButton, QTabWidget,
                              QCheckBox)
-from PyQt6.QtGui import QAction, QFont
+from PyQt6.QtGui import QAction, QFont, QColor
 
 from pathlib import Path
 
@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
 
     decrypt_label_header_message: QLabel
     decrypt_label_message: QLabel
-    decrypt_input_encrypt_message: QLineEdit
+    input_decrypt_message: QTextEdit
 
     label_result: QLabel
 
@@ -102,24 +102,28 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.open_file)
         
-        self.choose_mode1 = QAction("Set",self)
+        self.choose_mode1 = QAction("Mode1",self)
+        self.choose_mode1.setCheckable(True)
         self.choose_mode1.triggered.connect(self.show_mode_dialog1)
 
-        self.choose_mode2 = QAction("Set",self)
+        self.choose_mode2 = QAction("Mode2",self)
+        self.choose_mode2.setCheckable(True)
         self.choose_mode2.triggered.connect(self.show_mode_dialog2)
 
         self.mode_menu = self.menu_bar.addMenu('&Mode')
-        self.mode_menu1 = self.mode_menu.addMenu('&Mode 2 letters')
-        self.mode_menu2 = self.mode_menu.addMenu('&Mode 3 letters')
-        self.mode_menu1.addAction(self.choose_mode1)
-        self.mode_menu2.addAction(self.choose_mode2)
+        self.mode_menu.addAction(self.choose_mode1)
+        self.mode_menu.addAction(self.choose_mode2)
 
     def show_mode_dialog1(self):
         self.bc=  BaconEncryptor(mode = 2)
+        self.choose_mode2.setChecked(False)
+        self.choose_mode1.setChecked(True)
         pass
 
     def show_mode_dialog2(self):
         self.bc = BaconEncryptor(mode = 3)
+        self.choose_mode1.setChecked(False)
+        self.choose_mode2.setChecked(True)
         pass
 
     def show_file_dialog(self):
@@ -147,8 +151,9 @@ class MainWindow(QMainWindow):
         self.label_header_container = QLabel()
         self.label_header_container.setText("Enter container:")
         self.label_container = QLabel(wordWrap=True)
-        self.input_container = QLineEdit()
-        self.input_container.textChanged.connect(self.label_container.setText)
+        self.input_container = QTextEdit()
+        self.input_container.textChanged.connect(
+            lambda: self.label_container.setText(self.input_container.toPlainText()))
 
         # collect container input elements into a vertical layout
         self.container_encrypt_layout = QVBoxLayout()
@@ -160,8 +165,9 @@ class MainWindow(QMainWindow):
         self.label_header_message = QLabel()
         self.label_header_message.setText("Enter message:")
         self.label_message = QLabel(wordWrap=True)
-        self.input_encrypt_message = QLineEdit()
-        self.input_encrypt_message.textChanged.connect(self.label_message.setText)
+        self.input_encrypt_message = QTextEdit()
+        self.input_encrypt_message.textChanged.connect(
+            lambda: self.label_message.setText(self.input_encrypt_message.toPlainText()))
 
         # collect message input elements into a vertical layout
         self.message_encrypt_layout = QVBoxLayout()
@@ -184,7 +190,6 @@ class MainWindow(QMainWindow):
         self.checkbox_simple = QCheckBox("Remove redundancy")
         self.checkbox_simple.setCheckable(True)
         self.checkbox_simple.toggled.connect(self.is_redundancy_removed)
-
 
         # collect buttons into one layout
         self.result_buttons_layout = QHBoxLayout()
@@ -210,7 +215,6 @@ class MainWindow(QMainWindow):
             self.bc = BaconEncryptor(remove_redundancy=True)
         else:
             self.bc = BaconEncryptor(remove_redundancy=False)
-     
 
     def set_initial_decrypt_layout(self):
         self.decrypt_label_result.setText(None)
@@ -225,22 +229,38 @@ class MainWindow(QMainWindow):
 
     def init_decrypt_input_UI(self):
         
-        self.bold_button = QPushButton("bold the text", self)
+        self.bold_button = QPushButton("bold", self)
         self.bold_button.clicked.connect(self.bold_text)
+
+        self.italic_button = QPushButton("italic", self)
+        self.italic_button.clicked.connect(self.italic_text)
+
+        self.underline_button = QPushButton("underline", self)
+        self.underline_button.clicked.connect(self.underline_text)
+
+        self.color_button = QPushButton("color", self)
+        self.color_button.clicked.connect(self.colored_text)
+
+        self.font_button_layot = QHBoxLayout()
+        self.font_button_layot.addWidget(self.bold_button)
+        self.font_button_layot.addWidget(self.italic_button)
+        self.font_button_layot.addWidget(self.underline_button)
+        self.font_button_layot.addWidget(self.color_button)
 
         # init message input elements
         self.decrypt_label_header_message = QLabel()
         self.decrypt_label_header_message.setText("Enter message:")
         self.decrypt_label_message = QLabel(wordWrap=True)
-        self.input_decrypt_message = QLineEdit()
-        self.input_decrypt_message.textChanged.connect(self.decrypt_label_message.setText)
+        self.input_decrypt_message = QTextEdit()
+        self.input_decrypt_message.textChanged.connect(lambda: self.decrypt_label_message.setText(self.input_decrypt_message.toHtml()))
 
         # collect message input elements into a vertical layout
         self.message_decrypt_layout = QVBoxLayout()
         self.message_decrypt_layout.addWidget(self.decrypt_label_header_message)
         self.message_decrypt_layout.addWidget(self.input_decrypt_message)
         self.message_decrypt_layout.addWidget(self.decrypt_label_message)
-        self.message_decrypt_layout.addWidget(self.bold_button)
+        self.message_decrypt_layout.addLayout(self.font_button_layot)
+
 
          # init button to get result
         self.decrypt_button_get_result = QPushButton("decrypt")
@@ -287,8 +307,30 @@ class MainWindow(QMainWindow):
         self.set_initial_decrypt_layout()
     
     def bold_text(self):
-        if (self.input_decrypt_message.selectedText()!=''):
-            self.input_decrypt_message.insert(''.join(f"<b>{letter}</b>" for letter in self.input_decrypt_message.selectedText()))
+        self.input_decrypt_message.setFontWeight(QFont.Weight.Bold)
+        print("here i am")
+        print(self.input_decrypt_message.toHtml())
+        #if (self.input_decrypt_message.toPlainText()!=''):
+        #    print("try to bold")
+        #    print(self.input_decrypt_message.toPlainText())
+        #    self.input_decrypt_message.insertHTML(''.join(f"<b>{letter}</b>" for letter in self.input_decrypt_message.toPlainText()[:]))
+
+    def italic_text(self):
+        self.input_decrypt_message.setFontItalic(True)
+        print("here i am")
+        print(self.input_decrypt_message.toHtml())
+
+    def underline_text(self):
+        self.input_decrypt_message.setFontUnderline(True)
+        print("here i am")
+        print(self.input_decrypt_message.toHtml())
+
+    def colored_text(self):
+        self.input_decrypt_message.setTextColor(QColor(0,0,255))
+        print("here i am")
+        print(self.input_decrypt_message.toHtml())
+
+
 
 
 if __name__ == "__main__":
