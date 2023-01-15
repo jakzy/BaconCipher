@@ -1,11 +1,12 @@
-import json
+import json, re
 
 from html.parser import HTMLParser
 
 true_val = 'A'
 false_val = 'B'
+third_val = 'C'
 
-english_dict = {"a": "AAAAA",
+english_dict = [{"a": "AAAAA",
                 "b": "AAAAB",
                 "c": "AAABA",
                 "d": "AAABB",
@@ -31,7 +32,37 @@ english_dict = {"a": "AAAAA",
                 "x": "BABBB",
                 "y": "BBAAA",
                 "z": "BBAAB",
-                " ": "BBBBB"}
+                " ": "BBBBB"},
+
+                {"a": "AAA",
+                "b": "AAB",
+                "c": "AAC",
+                "d": "ABA",
+                "e": "ABB",
+                "f": "ABC",
+                "g": "ACA",
+                "h": "ACB",
+                "i": "ACC",
+                "j": "BAA",
+                "k": "BAB",
+                "l": "BAC",
+                "m": "BBA",
+                "n": "BBB",
+                "o": "BBC",
+                "p": "BCA",
+                "q": "BCB",
+                "r": "BCC",
+                "s": "CAA",
+                "t": "CAB",
+                "u": "CAC",
+                "v": "CBA",
+                "w": "CBB",
+                "x": "CBC",
+                "y": "CCA",
+                "z": "CCB",
+                " ": "CCC"}
+
+                ]
 
 
 def letter_to_bool(letter: str):
@@ -96,14 +127,15 @@ class BaconEncryptor:
                 "ital": None,
                 "color": None}
 
-    def __init__(self, alph_dict=None, remove_redundancy=False, alph_file_path=None):
+    def __init__(self, alph_dict=None, remove_redundancy=False, alph_file_path=None, mode = 2):
         self.result = ""
+        self.mode=mode
         if alph_dict is not None:
             self.alph = alph_dict.copy()
         elif alph_file_path is not None:
             self.get_alph_from_json(alph_file_path)
         else:
-            self.alph = english_dict
+            self.alph = english_dict[mode-2]
 
         if remove_redundancy:
             self.process = self.hide_message_no_redundant
@@ -120,6 +152,12 @@ class BaconEncryptor:
 
     def process(self, message: str, container: str):
         pass
+    
+    def setmode(self,mode =2):
+        self.mode=mode
+    
+    def getmode(self):
+        return self.mode
 
     def hide_message_no_redundant(self, message: str, container: str):
         """
@@ -159,7 +197,7 @@ class BaconEncryptor:
         if len(message) == 0:
             self.result = container
             return container
-        if count_letters(container) < len(message) * 5:
+        if count_letters(container) < len(message) * (5 if self.mode == 2 else 3):
             self.result = "container too short, try another one"
             return "container too short, try another one"
 
@@ -172,8 +210,10 @@ class BaconEncryptor:
             if container[i].isalpha():
                 if curr_code[0] == true_val:
                     result += container[i].upper()
-                else:
+                elif curr_code[0] == false_val:
                     result += container[i].lower()
+                elif curr_code[0] == third_val:
+                    result += f"<b>{container[i]}</b>"
                 if len(curr_code) > 1:
                     curr_code = curr_code[1:]
                 else:
@@ -196,6 +236,21 @@ class BaconEncryptor:
         chunks = [''.join([true_val if x.isupper() else false_val for x in chunk]) for chunk in chunks]
         msg_ = ''.join([self.alph_reversed.get(chunk) if self.alph_reversed.get(chunk) else '' for chunk in chunks])
         return msg_
+    
+    def filter_mode3(self,str):
+        if str.isalpha or str == '*':
+            return True
+        else:
+            return False
+
+    def reveal_message_mode3(self, container) -> str:
+        container = re.sub('<b>[a-zA-Z]</b>','*',container)
+        cleared_container = ''.join(filter(self.filter_mode3, container))
+        n = 3
+        chunks = [cleared_container[i:i + n] for i in range(0, len(cleared_container), n)]
+        chunks = [''.join([third_val if x == '*' else true_val if x.isupper() else false_val for x in chunk]) for chunk in chunks]
+        msg_ = ''.join([self.alph_reversed.get(chunk) if self.alph_reversed.get(chunk) else '' for chunk in chunks])
+        return msg_
 
     def reveal_message_no_redundant(self, container):
         # parse
@@ -208,7 +263,7 @@ class BaconEncryptor:
 
 
 if __name__ == "__main__":
-    mr_bacon = BaconEncryptor(alph_dict=english_dict, remove_redundancy=True)
+    mr_bacon = BaconEncryptor(alph_dict=english_dict[0], remove_redundancy=True)
 
     cont_text = 'abcd'
     # cont_text = 'Привет, как дела?'
