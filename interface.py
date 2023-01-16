@@ -56,9 +56,9 @@ class MainWindow(QMainWindow):
 
     decrypt_result_buttons_layout: QHBoxLayout
 
-    checkbox_simple: QCheckBox
+    #checkbox_simple: QCheckBox
 
-    checkbox_simple_mode: QCheckBox
+    #checkbox_simple_mode: QCheckBox
 
     menu_bar = QMainWindow.menuBar
 
@@ -102,28 +102,45 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menu_bar.addMenu('&File')
         self.file_menu.addAction(self.open_file)
         
-        self.choose_mode1 = QAction("Mode1",self)
-        self.choose_mode1.setCheckable(True)
-        self.choose_mode1.triggered.connect(self.show_mode_dialog1)
+        self.binary_mode = QAction("Binary mode", self)
+        self.binary_mode.setCheckable(True)
+        self.binary_mode.triggered.connect(self.show_binary_mode)
 
-        self.choose_mode2 = QAction("Mode2",self)
-        self.choose_mode2.setCheckable(True)
-        self.choose_mode2.triggered.connect(self.show_mode_dialog2)
+        self.binary_mode_no_redundancy = QAction("Binary mode no redundancy", self)
+        self.binary_mode_no_redundancy.setCheckable(True)
+        self.binary_mode_no_redundancy.triggered.connect(self.show_binary_mode_no_redundancy)
+
+        self.ternary_mode = QAction("Ternary mode", self)
+        self.ternary_mode.setCheckable(True)
+        self.ternary_mode.triggered.connect(self.show_ternary_mode)
 
         self.mode_menu = self.menu_bar.addMenu('&Mode')
-        self.mode_menu.addAction(self.choose_mode1)
-        self.mode_menu.addAction(self.choose_mode2)
+        self.mode_menu.addAction(self.binary_mode)
+        self.mode_menu.addAction(self.binary_mode_no_redundancy)
+        self.mode_menu.addAction(self.ternary_mode)
 
-    def show_mode_dialog1(self):
+    def show_binary_mode(self):
         self.bc=  BaconEncryptor(mode = 2)
-        self.choose_mode2.setChecked(False)
-        self.choose_mode1.setChecked(True)
+        self.ternary_mode.setChecked(False)
+        self.binary_mode_no_redundancy.setChecked(False)
+        self.binary_mode.setChecked(True)
+        #self.checkbox_simple.blockSignals(False)
         pass
 
-    def show_mode_dialog2(self):
+    def show_binary_mode_no_redundancy(self):
+        self.bc=  BaconEncryptor(mode = 2, remove_redundancy=True)
+        self.ternary_mode.setChecked(False)
+        self.binary_mode.setChecked(False)
+        self.binary_mode_no_redundancy.setChecked(True)
+        #self.checkbox_simple.blockSignals(False)
+        pass
+
+    def show_ternary_mode(self):
         self.bc = BaconEncryptor(mode = 3)
-        self.choose_mode1.setChecked(False)
-        self.choose_mode2.setChecked(True)
+        self.binary_mode.setChecked(False)
+        self.binary_mode_no_redundancy.setChecked(False)
+        self.ternary_mode.setChecked(True)
+        #self.checkbox_simple.blockSignals(True)
         pass
 
     def show_file_dialog(self):
@@ -187,15 +204,14 @@ class MainWindow(QMainWindow):
         self.button_get_result.clicked.connect(self.button_get_result_was_clicked)
 
         # init checkbox to remove (or not) redundancy
-        self.checkbox_simple = QCheckBox("Remove redundancy")
-        self.checkbox_simple.setCheckable(True)
-        self.checkbox_simple.toggled.connect(self.is_redundancy_removed)
+        # self.checkbox_simple = QCheckBox("Remove redundancy")
+        # self.checkbox_simple.setCheckable(True)
+        # self.checkbox_simple.toggled.connect(self.is_redundancy_removed)
 
         # collect buttons into one layout
         self.result_buttons_layout = QHBoxLayout()
         self.result_buttons_layout.addWidget(self.button_get_result)
-        if self.bc.getmode()==2:
-            self.result_buttons_layout.addWidget(self.checkbox_simple)
+        #self.result_buttons_layout.addWidget(self.checkbox_simple)
 
         # init button to clear all input and result text labels
         self.button_clear = QPushButton("Clear")
@@ -210,11 +226,11 @@ class MainWindow(QMainWindow):
         self.base_encrypt_layout.addLayout(self.input_encrypt_layout)
         self.base_encrypt_layout.addLayout(self.result_buttons_layout)
 
-    def is_redundancy_removed(self):
-        if self.sender().isChecked():
-            self.bc = BaconEncryptor(remove_redundancy=True)
-        else:
-            self.bc = BaconEncryptor(remove_redundancy=False)
+    # def is_redundancy_removed(self):
+    #     if self.sender().isChecked():
+    #         self.bc = BaconEncryptor(remove_redundancy=True)
+    #     else:
+    #         self.bc = BaconEncryptor(remove_redundancy=False)
 
     def set_initial_decrypt_layout(self):
         self.decrypt_label_result.setText(None)
@@ -241,11 +257,15 @@ class MainWindow(QMainWindow):
         self.color_button = QPushButton("color", self)
         self.color_button.clicked.connect(self.colored_text)
 
+        self.default_button = QPushButton("default", self)
+        self.default_button.clicked.connect(self.default_text)
+
         self.font_button_layot = QHBoxLayout()
         self.font_button_layot.addWidget(self.bold_button)
         self.font_button_layot.addWidget(self.italic_button)
         self.font_button_layot.addWidget(self.underline_button)
         self.font_button_layot.addWidget(self.color_button)
+        self.font_button_layot.addWidget(self.default_button)
 
         # init message input elements
         self.decrypt_label_header_message = QLabel()
@@ -263,7 +283,7 @@ class MainWindow(QMainWindow):
 
 
          # init button to get result
-        self.decrypt_button_get_result = QPushButton("decrypt")
+        self.decrypt_button_get_result = QPushButton("Decrypt")
         self.decrypt_button_get_result.setCheckable(True)
         self.decrypt_button_get_result.clicked.connect(self.decrypt_button_get_result_was_clicked)
 
@@ -291,9 +311,10 @@ class MainWindow(QMainWindow):
 
     def decrypt_button_get_result_was_clicked(self):
         if self.bc.mode == 2:
-            res = self.bc.reveal_message_simple(self.decrypt_label_message.text())
+            res = self.bc.reveal_message_binary(self.decrypt_label_message.text())
         else:
             res = self.bc.reveal_message_mode3(self.decrypt_label_message.text())
+        self.decrypt_label_result.setText("")
         self.decrypt_label_result.setText(res)
         self.base_decrypt_layout.addWidget(self.decrypt_label_result)
         self.base_decrypt_layout.addWidget(self.decrypt_button_clear)
@@ -308,27 +329,21 @@ class MainWindow(QMainWindow):
     
     def bold_text(self):
         self.input_decrypt_message.setFontWeight(QFont.Weight.Bold)
-        print("here i am")
-        print(self.input_decrypt_message.toHtml())
-        #if (self.input_decrypt_message.toPlainText()!=''):
-        #    print("try to bold")
-        #    print(self.input_decrypt_message.toPlainText())
-        #    self.input_decrypt_message.insertHTML(''.join(f"<b>{letter}</b>" for letter in self.input_decrypt_message.toPlainText()[:]))
 
     def italic_text(self):
         self.input_decrypt_message.setFontItalic(True)
-        print("here i am")
-        print(self.input_decrypt_message.toHtml())
 
     def underline_text(self):
         self.input_decrypt_message.setFontUnderline(True)
-        print("here i am")
-        print(self.input_decrypt_message.toHtml())
 
     def colored_text(self):
         self.input_decrypt_message.setTextColor(QColor(0,0,255))
-        print("here i am")
-        print(self.input_decrypt_message.toHtml())
+
+    def default_text(self):
+        self.input_decrypt_message.setFontWeight(QFont.Weight.Normal)
+        self.input_decrypt_message.setFontItalic(False)
+        self.input_decrypt_message.setFontUnderline(False)
+        self.input_decrypt_message.setTextColor(QColor(0, 0, 0))
 
 
 
